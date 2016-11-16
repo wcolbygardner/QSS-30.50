@@ -15,7 +15,9 @@ c <- b %>% group_by(RACEC,YEAR) %>% summarise(NUMBER = sum(PERWT))
 d <- c %>% spread(YEAR, NUMBER)
 #graph
 ggplot(data=c,aes(x=YEAR,y=NUMBER))+
+  ggtitle('Population of Each Race 1900-1940')+
   geom_bar(stat='identity')+
+  scale_y_continuous(labels=scales::comma)+
   facet_wrap(~RACEC,scales='free_y',ncol=5)
 
 #Womens Occupation Graphs 
@@ -61,11 +63,16 @@ ggplot(data=f1,aes(x=YEAR,y=Number,fill=Occupation)) +
   scale_fill_brewer(palette='Set2',guide=guide_legend(reverse=TRUE))+
   facet_wrap(~Race,ncol=2,scales='free_y') +
   theme_bw()
-#geom_text(label=ifelse(f1$Occupation=='farmers and farm laborers',paste('Different=','%',sep=''),''),angle=90,y=.5)
-
+#create data table, filter for farmers
 table <- f1 %>% filter(Occupation=='farmers and farm laborers') 
 table2 <- left_join(t1,table)
+#create percentage(representation of graph) that i later didnt use
 table3 <- table2 %>% mutate(pct=Number/Number1*100)
+#format table of data
+table4 <- table3 %>% select(Number,YEAR,Race,Occupation) %>% group_by(Race,YEAR) %>% spread(YEAR, Number)
+#export dataframe to excell
+write_csv(d,'./Final/raced_data.csv')
+
 #Ancestory
 library(readr)
 library(dplyr)
@@ -75,38 +82,41 @@ library(ggmap)
 library(maptools)
 library(gtools)
 #read in map data
-mapdata <- read_csv('data/map.csv')
-map1 <- ggplot() + theme_nothing(legend=TRUE) +
+mapdata <- read_csv('data/map.csv')=
+  map1 <- ggplot() + theme_nothing(legend=TRUE) +
   geom_polygon(data=mapdata, aes(x=long,y=lat,group=group),fill='white',color='black')
 png('map.png',width=1500,height=1000)
 print(map1)
 dev.off()
-
 #read in data
 ipums <- read_csv('Final/Anc1.csv',col_types = cols(PERWT=col_double()))
-
-#read in codebook
 anc <- read_csv('Final/Ancode.csv',col_types = cols(ANCESTR1='i'))
 
-#summarise 
+#summerise for each ancestry in each year
 anc1 <- ipums %>% group_by(YEAR,STATEFIP,ANCESTR1) %>% summarise(Number=sum(PERWT))
 
-anc2 <- anc1 %>% group_by(YEAR,STATEFIP) %>% mutate(MAX=max(Number))
+#filter for non responses
+anc11 <- anc1 %>% filter(!ANCESTR1==999)
 
+#create variable for most common ancestry
+anc2 <- anc11 %>% group_by(YEAR,STATEFIP) %>% mutate(MAX=max(Number))
 anc3 <- anc2 %>% filter(MAX==Number)
 
+#join data with labels for ancestry variable
 anc4 <- anc3 %>% left_join(anc,by='ANCESTR1')
 
+#graph maps
 mapdata$STATEFIP <- as.numeric(mapdata$STATEFIP)
 anc4$STATEFIP <- as.numeric(anc4$STATEFIP)
 anc5 <- left_join(anc4, mapdata, by = "STATEFIP") %>% arrange(order)
 
 for (year in unique(anc4$YEAR)) {
-  map2 <- map1 +scale_fill_brewer(palette='Set1') +
+  map2 <- map1 +scale_fill_brewer(palette='Set1')+
+    ggtitle(paste('Map of Ancestry in',year))+
     geom_polygon(data=filter(anc5,YEAR==year), 
-                 aes(x=long,y=lat,group=group,fill=Ancestry),color='black')
-  png(paste(('map_'),year,'.png',sep=''),width=1500,height=1000)
-  print(map2)
+                 aes(x=long,y=lat,group=group,fill=Ancestry),color='black') 
+  png(paste(('map_'),year,'.png',sep=''),width=1500,height=1000) 
+  print(map2) 
   dev.off()
-}
+} 
 print(map2)
