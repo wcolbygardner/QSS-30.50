@@ -1,3 +1,5 @@
+#Race bar graph
+
 #read in librarys
 library(dplyr)
 library(tidyr)
@@ -73,7 +75,8 @@ table4 <- table3 %>% select(Number,YEAR,Race,Occupation) %>% group_by(Race,YEAR)
 #export dataframe to excell
 write_csv(d,'./Final/raced_data.csv')
 
-#Ancestory
+#Ancestry
+
 library(readr)
 library(dplyr)
 library(ggplot2)
@@ -92,7 +95,7 @@ dev.off()
 ipums <- read_csv('Final/Anc1.csv',col_types = cols(PERWT=col_double()))
 anc <- read_csv('Final/Ancode.csv',col_types = cols(ANCESTR1='i'))
 
-#summerise for each ancestry in each year
+#summarise for each ancestry in each year
 anc1 <- ipums %>% group_by(YEAR,STATEFIP,ANCESTR1) %>% summarise(Number=sum(PERWT))
 
 #filter for non responses
